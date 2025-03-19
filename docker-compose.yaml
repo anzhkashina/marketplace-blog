@@ -1,0 +1,62 @@
+services:
+  db:
+    image: postgres:13
+    environment:
+      POSTGRES_USER: user
+      POSTGRES_PASSWORD: password
+      POSTGRES_DB: marketplace
+    ports:
+      - "5432:5432"
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    depends_on:
+      - db
+      - rabbitmq
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./src/marketplace_blog:/app/marketplace_blog
+    environment:
+      MAIL_USERNAME: ${MAIL_USERNAME}
+      MAIL_PASSWORD: ${MAIL_PASSWORD}
+      MAIL_FROM: ${MAIL_FROM}
+  minio:
+    image: quay.io/minio/minio
+    ports:
+      - "9000:9000" # Port for S3 API
+      - "9001:9001" # Port for web console
+    environment:
+      MINIO_ROOT_USER: ${MINIO_ROOT_USER}
+      MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD}
+    command: server /data --console-address ":9001"
+    volumes:
+      - minio_data:/data
+  rabbitmq:
+    image: rabbitmq:3-management
+    ports:
+      - "5672:5672"          # Порт для подключения к RabbitMQ
+      - "15672:15672"        # Порт для управления через веб-интерфейс
+    environment:
+      RABBITMQ_DEFAULT_USER: ${RABBITMQ_DEFAULT_USER}
+      RABBITMQ_DEFAULT_PASS: ${RABBITMQ_DEFAULT_PASS}
+    volumes:
+      - rabbitmq_data:/var/lib/rabbitmq
+  celery_worker:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    volumes:
+      - ./src/marketplace_blog:/app/marketplace_blog
+    command: ["poetry", "run", "celery", "-A", "src.marketplace_blog.celery_worker", "worker", "--loglevel=info"]
+    depends_on:
+      - rabbitmq
+    environment:
+      MAIL_USERNAME: ${MAIL_USERNAME}
+      MAIL_PASSWORD: ${MAIL_PASSWORD}
+      MAIL_FROM: ${MAIL_FROM}
+
+volumes:
+  minio_data:
+  rabbitmq_data:

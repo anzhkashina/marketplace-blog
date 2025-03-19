@@ -17,9 +17,6 @@ tox.ini
 *.log
 *.out
 
-Dockerfile
-docker-compose.yaml
-
 *.pid
 *.sock
 
