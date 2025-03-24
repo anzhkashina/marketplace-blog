@@ -8,7 +8,7 @@ import os
 import bcrypt
 import jwt
 from fastapi.security import OAuth2PasswordBearer
-from src.marketplace_blog.celery_worker import send_registration_email
+from src.marketplace_blog.services.email_service import send_email
 from datetime import datetime, timedelta
 import pytz
 
@@ -36,7 +36,7 @@ async def register(user: UserRegistration, db: Session = Depends(get_db)):
     recipient = user.email
     body = f"Welcome, {user.email}! Your registration was successful."
     # Вызов Celery задачи для отправки почты
-    send_registration_email.delay(subject, recipient, body)
+    send_email.delay(subject, recipient, body)
 
     return {"message": "User registered successfully", "user_id": new_user.id}
 

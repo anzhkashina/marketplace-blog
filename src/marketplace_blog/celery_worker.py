@@ -1,12 +1,21 @@
 from celery import Celery
-from src.marketplace_blog.services import email_service
-from src.marketplace_blog.services.email_service import broker_url
+import os
+from dotenv import load_dotenv
 
-celery_app = Celery(__name__, broker=broker_url)
+# Загрузка переменных окружения из файла .env
+load_dotenv()
 
 
-@celery_app.task
-def send_registration_email(email: str):
-    subject = "Welcome to our service!"
-    body = "Thank you for registering!"
-    email_service.send_email(subject, email, body)
+def create_celery_app():
+    broker_url = os.getenv(
+        "CELERY_BROKER_URL",
+        "pyamqp://${RABBITMQ_DEFAULT_USER}:${RABBITMQ_DEFAULT_PASS}@rabbitmq:5672//",
+    )
+
+    if not broker_url:
+        raise ValueError("CELERY_BROKER_URL must be set in the environment.")
+
+    return Celery(__name__, broker=broker_url)
+
+
+celery_app = create_celery_app()

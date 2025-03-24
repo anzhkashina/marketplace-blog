@@ -1,9 +1,13 @@
 from fastapi import FastAPI, Request, HTTPException
 from dotenv import load_dotenv
 import os
+import sys
 import jwt
 from pydantic import BaseModel
 from src.marketplace_blog.routers import auth, articles, categories, images
+
+base_dir = os.path.dirname(os.path.abspath(__file__))
+sys.path.append(os.path.join(base_dir, ".."))
 
 # Загрузка переменных окружения из файла .env
 load_dotenv()
