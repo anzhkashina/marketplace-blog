@@ -22,7 +22,7 @@ services:
       MAIL_USERNAME: ${MAIL_USERNAME}
       MAIL_PASSWORD: ${MAIL_PASSWORD}
       MAIL_FROM: ${MAIL_FROM}
-      CELERY_BROKER_URL: ${CELERY_BROKER_URL}
+      CELERY_BROKER_URL: pyamqp://${RABBITMQ_DEFAULT_USER}:${RABBITMQ_DEFAULT_PASS}@rabbitmq:5672//
 
   minio:
     image: quay.io/minio/minio
@@ -60,7 +60,7 @@ services:
       MAIL_USERNAME: ${MAIL_USERNAME}
       MAIL_PASSWORD: ${MAIL_PASSWORD}
       MAIL_FROM: ${MAIL_FROM}
-      CELERY_BROKER_URL: ${CELERY_BROKER_URL}
+      CELERY_BROKER_URL: pyamqp://${RABBITMQ_DEFAULT_USER}:${RABBITMQ_DEFAULT_PASS}@rabbitmq:5672//
 
 volumes:
   minio_data:

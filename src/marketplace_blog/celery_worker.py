@@ -1,3 +1,5 @@
+import time
+
 from celery import Celery
 import os
 from dotenv import load_dotenv
@@ -19,3 +21,5 @@ def create_celery_app():
 
 
 celery_app = create_celery_app()
+
+time.sleep(10)
