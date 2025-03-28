@@ -1,7 +1,7 @@
 import pytest
 from fastapi.testclient import TestClient
 from unittest.mock import patch
-from src.marketplace_blog.main import app  # Импортируйте ваше FastAPI приложение
+from src.main import app  # Импортируйте ваше FastAPI приложение
 
 client = TestClient(app)
 

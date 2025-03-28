@@ -1,30 +1,26 @@
-from pydantic import BaseModel, EmailStr
+from pydantic import BaseModel, EmailStr, constr
 from typing import Optional, List
 from datetime import datetime
 
 
-# Схема для пользователя
-class UserBase(BaseModel):
-    email: EmailStr  # Используем EmailStr для более строгой проверки формата email
-
-
-class UserRegistration(UserBase):
-    password: str
+class UserRegistration(BaseModel):
+    email: EmailStr
+    password: constr(min_length=8)
 
 
 class UserLogin(BaseModel):
-    email: str
+    email: EmailStr
     password: str
 
 
-class User(UserBase):
+class User(BaseModel):
     id: int
+    email: EmailStr
 
     class Config:
         from_attributes = True
 
 
-# Схема для статьи
 class ArticleBase(BaseModel):
     title: str
     content: str
@@ -54,7 +50,7 @@ class ArticleUpdate(BaseModel):
         from_attributes = True
 
 
-class ArticleResponse(ArticleBase):  # Схема для отображения статьи
+class ArticleResponse(ArticleBase):
     id: int
     created_at: datetime
     updated_at: datetime
@@ -63,7 +59,7 @@ class ArticleResponse(ArticleBase):  # Схема для отображения 
         from_attributes = True
 
 
-class ArticlesListResponse(BaseModel):  # Схема для ответа с множеством статей
+class ArticlesListResponse(BaseModel):
     total_count: int  # Общее количество статей
     articles: List[ArticleResponse]
 
@@ -73,7 +69,6 @@ class ArticleDelete(ArticleBase):
     deleted_at: datetime
 
 
-# Схема для категории
 class CategoryBase(BaseModel):
     name: str
 

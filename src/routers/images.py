@@ -1,6 +1,6 @@
 import logging
-from fastapi import APIRouter, UploadFile, File, HTTPException
-from src.marketplace_blog.services.s3_service import S3Service
+from fastapi import APIRouter, UploadFile, File, HTTPException, status
+from src.services.s3_service import S3Service
 
 logger = logging.getLogger(__name__)
 
@@ -15,28 +15,33 @@ def allowed_file(filename):
     return "." in filename and filename.rsplit(".", 1)[1].lower() in ALLOWED_EXTENSIONS
 
 
-@router.post("/upload-image")
+@router.post("/upload-image", status_code=status.HTTP_201_CREATED)
 async def upload_image(file: UploadFile = File(...)):
     """Загружает изображение на S3 и возвращает URL изображения. :param file: Файл изображения :return: Словарь с ключом 'image_url', содержащим URL загруженного изображения"""
     if not file:
         logger.error("No file uploaded")
-        raise HTTPException(status_code=400, detail="No file uploaded")
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST, detail="No file uploaded"
+        )
     if not allowed_file(file.filename):
         logger.error(f"Unacceptable file extension: {file.filename}.")
         raise HTTPException(
-            status_code=415,
+            status_code=status.HTTP_415_UNSUPPORTED_MEDIA_TYPE,
             detail=f"Unacceptable type of file: {file.filename}. Only files with extensions are allowed: {', '.join(ALLOWED_EXTENSIONS)}.",
         )
 
     try:
         file_name = file.filename
-        image_url = s3_service.upload_image(file.file, file_name, endpoint_url=None)
+        image_url = await s3_service.upload_image(
+            file.file, file_name, endpoint_url=None
+        )
         logger.info(f"Successful download of the file: {file_name}, URL: {image_url}")
         return {"image_url": image_url}
     except Exception as e:
         logger.exception(f"There was an error when downloading the file: {str(e)}")
         raise HTTPException(
-            status_code=500, detail="There was an internal server error."
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="There was an internal server error.",
         )
 
 
@@ -44,11 +49,13 @@ async def upload_image(file: UploadFile = File(...)):
 async def get_image(file_name: str):
     """Получает URL изображения из S3. :param file_name: Имя файла изображения :return: Словарь с ключом 'image_url', содержащим URL изображения"""
     try:
-        image_url = s3_service.get_image_url(file_name, endpoint_url=None)
+        image_url = await s3_service.get_image_url(file_name, endpoint_url=None)
         logger.info(
             f"Successful acquisition of image URL: {file_name}, URL: {image_url}"
         )
         return {"image_url": image_url}
     except Exception as e:
         logger.exception(f"There was an error when you get an image URL: {str(e)}")
-        raise HTTPException(status_code=404, detail="Image not found.")
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail="Image not found."
+        )

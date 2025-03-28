@@ -2,10 +2,11 @@ from sqlalchemy import Column, Integer, String, DateTime, ForeignKey
 from datetime import datetime
 import pytz
 from sqlalchemy.orm import relationship
-from src.marketplace_blog.database import Base
+from sqlalchemy.ext.declarative import declarative_base
 
-# Установите временную зону UTC
 UTC = pytz.UTC
+
+Base = declarative_base()
 
 
 class User(Base):

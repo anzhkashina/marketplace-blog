@@ -1,15 +1,11 @@
-from fastapi import FastAPI, Request, HTTPException
+from fastapi import FastAPI, Request, HTTPException, status
+import uvicorn
 from dotenv import load_dotenv
 import os
-import sys
 import jwt
-from pydantic import BaseModel
-from src.marketplace_blog.routers import auth, articles, categories, images
+from src.routers import categories
+from src.routers import articles, auth, images
 
-base_dir = os.path.dirname(os.path.abspath(__file__))
-sys.path.append(os.path.join(base_dir, ".."))
-
-# Загрузка переменных окружения из файла .env
 load_dotenv()
 
 app = FastAPI()
@@ -27,7 +23,6 @@ async def root():
     return {"message": "Welcome to the Marketplace Blog API"}
 
 
-# Middleware для проверки токена
 @app.middleware("http")
 async def jwt_middleware(request: Request, call_next):
     token = request.cookies.get("token")
@@ -38,31 +33,17 @@ async def jwt_middleware(request: Request, call_next):
                 payload  # Сохранение данных пользователя в объектах запроса
             )
         except jwt.ExpiredSignatureError:
-            raise HTTPException(status_code=403, detail="Token has expired")
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN, detail="Token has expired"
+            )
         except jwt.PyJWTError:
-            raise HTTPException(status_code=403, detail="Invalid token")
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN, detail="Invalid token"
+            )
 
     response = await call_next(request)
     return response
 
 
-# Модели для сериализации данных
-class UserRegistration(BaseModel):
-    email: str
-    password: str
-
-
-class UserLogin(BaseModel):
-    email: str
-    password: str
-
-
-class ArticleCreate(BaseModel):
-    title: str
-    content: str
-    category_id: int
-    image_url: str
-
-
-class CategoriesCreate(BaseModel):
-    name: str
+if __name__ == "__main__":
+    uvicorn.run(app, host="0.0.0.0", port=8000)

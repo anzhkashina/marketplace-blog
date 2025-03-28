@@ -3,9 +3,9 @@ services:
   db:
     image: postgres:13
     environment:
-      POSTGRES_USER: user
-      POSTGRES_PASSWORD: password
-      POSTGRES_DB: marketplace
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_DB}
     ports:
       - "5432:5432"
 
@@ -22,8 +22,8 @@ services:
       MAIL_USERNAME: ${MAIL_USERNAME}
       MAIL_PASSWORD: ${MAIL_PASSWORD}
       MAIL_FROM: ${MAIL_FROM}
-      CELERY_BROKER_URL: pyamqp://${RABBITMQ_DEFAULT_USER}:${RABBITMQ_DEFAULT_PASS}@rabbitmq:5672//
-
+      CELERY_BROKER_URL: ${CELERY_BROKER_URL}
+      DATABASE_URL: ${DATABASE_URL}
   minio:
     image: quay.io/minio/minio
     ports:
@@ -47,20 +47,21 @@ services:
     volumes:
       - rabbitmq_data:/var/lib/rabbitmq
 
-  celery_worker:
+  celery:
     build:
       context: .
       dockerfile: Dockerfile
     volumes:
-      - ./src/marketplace_blog:/app/marketplace_blog
-    command: ["poetry", "run", "celery", "-A", "marketplace_blog.celery_worker", "worker", "--loglevel=info"]
+      - .:/app
+    command: ["poetry", "run", "celery", "-A", "src.celery_worker", "worker", "--loglevel=info"]
     depends_on:
       - rabbitmq
     environment:
       MAIL_USERNAME: ${MAIL_USERNAME}
       MAIL_PASSWORD: ${MAIL_PASSWORD}
       MAIL_FROM: ${MAIL_FROM}
-      CELERY_BROKER_URL: pyamqp://${RABBITMQ_DEFAULT_USER}:${RABBITMQ_DEFAULT_PASS}@rabbitmq:5672//
+      CELERY_BROKER_URL: ${CELERY_BROKER_URL}
+      BACKEND_URL: ${BACKEND_URL}
 
 volumes:
   minio_data:

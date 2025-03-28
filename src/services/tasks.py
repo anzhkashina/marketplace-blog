@@ -3,7 +3,7 @@ import logging
 from dotenv import load_dotenv
 from fastapi_mail import FastMail, MessageSchema, ConnectionConfig, MessageType
 from pydantic import BaseModel, EmailStr, SecretStr
-from src.marketplace_blog.celery_worker import celery_app
+from src.celery_worker import celery_app
 
 # Загрузка переменных окружения из файла .env
 load_dotenv()
