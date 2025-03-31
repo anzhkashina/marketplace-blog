@@ -5,7 +5,7 @@ description = "Api for the marketplace's blog"
 authors = ["Kashina Anzhelika <anzhelikakashina2014yandex.ru@gmail.com>"]
 readme = "README.md"
 packages = [
-    { include = "src/marketplace_blog" },
+    { include = "src/" },
 ]
 
 [tool.poetry.dependencies]
@@ -15,7 +15,7 @@ uvicorn = "^0.34.0"
 ruff = "^0.9.9"
 sqlalchemy = "^2.0.38"
 psycopg2-binary = "^2.9.10"
-celery = {extras = ["redis"], version = "^5.4.0"}
+celery = {extras = ["rabbitmq"], version = "^5.4.0"}
 aiohttp = "^3.11.13"
 python-multipart = "^0.0.20"
 python-jose = "^3.4.0"
@@ -30,6 +30,8 @@ pytest = "^8.3.5"
 pytest-asyncio = "^0.25.3"
 fastapi-mail = "^1.4.2"
 asyncpg = "^0.30.0"
+httpx = "^0.28.1"
+gevent = "^24.11.1"
 
 
 [build-system]

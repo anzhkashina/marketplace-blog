@@ -2,11 +2,9 @@ from sqlalchemy import Column, Integer, String, DateTime, ForeignKey
 from datetime import datetime
 import pytz
 from sqlalchemy.orm import relationship
-from sqlalchemy.ext.declarative import declarative_base
+from src.database import Base
 
 UTC = pytz.UTC
-
-Base = declarative_base()
 
 
 class User(Base):

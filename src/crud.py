@@ -1,13 +1,19 @@
 import pytz
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy.future import select
 from sqlalchemy.exc import NoResultFound
-from src.models import Article, Category, ArticleDelete
+from src.models import User, Article, Category, ArticleDelete
 from src.schemas import ArticleCreate, ArticleUpdate
 from datetime import datetime
+from typing import Optional
+from sqlalchemy import bindparam, Integer, cast, select
+from sqlalchemy.orm import selectinload
 
-# Установите временную зону UTC
 UTC = pytz.UTC
+
+
+async def get_user_by_email(db: AsyncSession, email: str):
+    result = await db.execute(select(User).where(User.email == email))
+    return result.scalars().first()
 
 
 async def create_article(db: AsyncSession, article: ArticleCreate) -> Article:
@@ -27,25 +33,35 @@ async def create_article(db: AsyncSession, article: ArticleCreate) -> Article:
 
 async def get_filtered_articles(
     db: AsyncSession,
-    search: str = None,
-    category_id: int = None,
+    search: Optional[str] = None,
+    category_id: Optional[int] = None,
     skip: int = 0,
     limit: int = 10,
 ):
-    query = select(Article).join(Category)
+    query = select(Article).join(Category).options(selectinload(Article.category))
+    params = {}
 
     if search:
         query = query.filter(Article.title.ilike(f"%{search}%"))
 
     if category_id is not None:
-        query = query.filter(Article.category_id == category_id)
+        query = query.filter(
+            Article.category_id == cast(bindparam("category_id"), Integer)
+        )
+        params["category_id"] = category_id
 
-    result = await db.execute(query.offset(skip).limit(limit))
-    return result.scalars().all()
+    result = await db.execute(query.offset(skip).limit(limit), params)
+    articles = result.scalars().all()
+    return articles
 
 
 async def get_article(db: AsyncSession, article_id: int) -> Article:
-    result = await db.execute(select(Article).filter(Article.id == article_id))
+    query = (
+        select(Article)
+        .options(selectinload(Article.category))
+        .filter(Article.id == cast(bindparam("article_id"), Integer))
+    )
+    result = await db.execute(query, {"article_id": article_id})
     article = result.scalar_one_or_none()
     if article is None:
         raise NoResultFound(f"Article with ID {article_id} not found.")
@@ -69,15 +85,12 @@ async def update_article(
 async def delete_article(db: AsyncSession, article_id: int) -> Article | None:
     db_article = await get_article(db, article_id)
     if not db_article:
-        raise NoResultFound(f"Article with ID {article_id} not found.")
+        return None
 
-    db_article.deleted_at = datetime.now(UTC)
-    db_article.is_deleted = True
-    await db.commit()
     return db_article
 
 
-async def move_article_to_deleted(db: AsyncSession, article: Article) -> ArticleDelete:
+async def move_article_to_deleted(db: AsyncSession, article: Article) -> None:
     deleted_article = ArticleDelete(
         id=article.id,
         title=article.title,
@@ -90,5 +103,3 @@ async def move_article_to_deleted(db: AsyncSession, article: Article) -> Article
     db.add(deleted_article)
     await db.delete(article)
     await db.commit()
-
-    return deleted_article

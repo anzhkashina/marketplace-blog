@@ -1,4 +1,7 @@
+from typing import Optional
+
 from fastapi import APIRouter, Depends, HTTPException, Query, status
+from fastapi.responses import Response
 from sqlalchemy.ext.asyncio import AsyncSession
 from src.models import Article, Category
 from src.schemas import (
@@ -6,7 +9,6 @@ from src.schemas import (
     ArticleResponse,
     ArticlesListResponse,
     ArticleUpdate,
-    ArticleDelete,
 )
 from src.database import get_db
 from src.crud import (
@@ -16,8 +18,12 @@ from src.crud import (
     get_filtered_articles,
     move_article_to_deleted,
 )
+import logging
 
 router = APIRouter()
+
+logging.basicConfig(level=logging.DEBUG)
+logger = logging.getLogger(__name__)
 
 
 @router.post(
@@ -33,11 +39,12 @@ async def create_article(article: ArticleCreate, db: AsyncSession = Depends(get_
 )
 async def get_articles(
     search: str = None,
-    category_id: int = None,
+    category_id: Optional[int] = Query(None),
     page_number: int = Query(1, ge=1),
     page_size: int = Query(10, le=100),
     db: AsyncSession = Depends(get_db),
 ):
+    logger.debug(f"category_id received: {category_id}, type: {type(category_id)}")
     articles = await get_filtered_articles(
         db, search, category_id, skip=(page_number - 1) * page_size, limit=page_size
     )
@@ -78,7 +85,6 @@ async def update_article(
 @router.delete(
     "/articles/{article_id}",
     status_code=status.HTTP_204_NO_CONTENT,
-    response_model=ArticleDelete,
 )
 async def delete_article(article_id: int, db: AsyncSession = Depends(get_db)):
     db_article = await crud_delete_article(db, article_id)
@@ -87,7 +93,5 @@ async def delete_article(article_id: int, db: AsyncSession = Depends(get_db)):
             status_code=status.HTTP_404_NOT_FOUND, detail="Article not found"
         )
 
-    # Перемещение удаленной статьи в отдельную таблицу
-    deleted_article = await move_article_to_deleted(db, db_article)
-
-    return deleted_article
+    await move_article_to_deleted(db, db_article)
+    return Response(status_code=status.HTTP_204_NO_CONTENT)

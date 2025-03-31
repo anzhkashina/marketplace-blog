@@ -9,12 +9,17 @@ import bcrypt
 import jwt
 from fastapi.security import OAuth2PasswordBearer
 from src.services.tasks import send_email
+from src.crud import get_user_by_email
 from datetime import datetime, timedelta
 import pytz
+import logging
 
 router = APIRouter()
 SECRET_KEY = os.getenv("SECRET_KEY", "default_secret")
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="login")
+
+logging.basicConfig(level=logging.DEBUG)
+logger = logging.getLogger(__name__)
 
 
 @router.post("/register", status_code=status.HTTP_201_CREATED)
@@ -35,10 +40,8 @@ async def register(user: UserRegistration, db: AsyncSession = Depends(get_db)):
     await db.refresh(new_user)
 
     subject = "Registration Successful"
-    recipient = user.email
     body = f"Welcome, {user.email}! Your registration was successful."
-
-    send_email.delay(subject, recipient, body)
+    send_email.delay(user.email, subject, body)
 
     return {"message": "User registered successfully", "user_id": new_user.id}
 
@@ -47,8 +50,9 @@ async def register(user: UserRegistration, db: AsyncSession = Depends(get_db)):
 async def login(
     user: UserLogin, response: Response, db: AsyncSession = Depends(get_db)
 ):
-    db_user = await db.execute(User.__table__.select().where(User.email == user.email))
-    db_user = db_user.scalars().first()
+    db_user = await get_user_by_email(db, user.email)
+    logger.debug(f"Тип db_user: {type(db_user)}")
+    logger.debug(f"Значение db_user: {db_user}")
 
     if db_user and bcrypt.checkpw(
         user.password.encode("utf-8"), db_user.password.encode("utf-8")

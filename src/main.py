@@ -1,5 +1,4 @@
 from fastapi import FastAPI, Request, HTTPException, status
-import uvicorn
 from dotenv import load_dotenv
 import os
 import jwt
@@ -43,7 +42,3 @@ async def jwt_middleware(request: Request, call_next):
 
     response = await call_next(request)
     return response
-
-
-if __name__ == "__main__":
-    uvicorn.run(app, host="0.0.0.0", port=8000)
